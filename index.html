@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MILENA | ELITE SYSTEM</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MILENA ELITE">
+    
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3043/3043234.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3043/3043234.png">
+    
+    <style>
+        :root { --bg: #0a0a0a; --card: #161616; --accent: #ff69b4; --text: #f5f5f5; --item-bg: #222; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 450px; }
+
+        header { background: linear-gradient(180deg, #222, #0a0a0a); border: 2px solid var(--accent); padding: 15px; border-radius: 20px; text-align: center; margin-bottom: 15px; box-shadow: 0 0 15px rgba(255,105,180,0.1); }
+        .name-tag { font-size: 0.6rem; color: var(--accent); letter-spacing: 4px; font-weight: bold; text-transform: uppercase; }
+        h1 { margin: 5px 0; font-size: 1.6rem; letter-spacing: 1px; color: var(--accent); }
+
+        .timer-box { background: #1a000d; border: 1px solid var(--accent); border-radius: 15px; padding: 12px; text-align: center; margin-bottom: 15px; }
+        #timer-display { font-size: 2.8rem; font-weight: bold; color: var(--accent); font-family: monospace; display: block; }
+        .btn-t { background: var(--accent); border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; margin: 2px; }
+
+        .nav-days { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 12px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #333; }
+        .nav-arrow { background: none; border: none; color: var(--accent); font-size: 1.5rem; cursor: pointer; padding: 0 15px; }
+        #day-name { font-weight: bold; font-size: 1rem; color: var(--accent); text-transform: uppercase; }
+
+        .card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 15px; border-left: 4px solid var(--accent); }
+        h2 { font-size: 0.85rem; margin: 0 0 10px 0; color: var(--accent); text-transform: uppercase; }
+
+        .item { background: var(--item-bg); padding: 10px; border-radius: 10px; margin-bottom: 8px; border: 1px solid #333; transition: 0.3s; }
+        .item.done { opacity: 0.3; }
+        .gram-highlight { color: var(--accent); font-weight: bold; }
+        
+        .check-circle { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--accent); cursor: pointer; position: relative; }
+        .item.done .check-circle { background: var(--accent); }
+        .item.done .check-circle::after { content: '✓'; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 12px; font-weight: bold; }
+
+        .load-input { background: #000; border: 1px solid #444; color: var(--accent); width: 65px; text-align: center; padding: 5px; border-radius: 4px; font-weight: bold; outline: none; }
+        .btn-reset { width: 100%; background: none; border: 1px solid #333; color: #555; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 0.75rem; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <span class="name-tag">Milena | Elite Fitness</span>
+        <h1>MILENA</h1>
+        <div style="font-size: 0.8rem; opacity: 0.8;">Foco: Inferiores & Tonificação</div>
+    </header>
+
+    <div class="timer-box">
+        <span id="timer-display">01:00</span>
+        <button class="btn-t" onclick="startTimer(60)">60s</button>
+        <button class="btn-t" onclick="startTimer(90)">90s</button>
+        <button class="btn-t" style="background:#444" onclick="resetTimer()">Reset</button>
+    </div>
+
+    <div class="nav-days">
+        <button class="nav-arrow" onclick="changeDay(-1)">◀</button>
+        <div style="text-align:center">
+            <span id="day-name">---</span>
+        </div>
+        <button class="nav-arrow" onclick="changeDay(1)">▶</button>
+    </div>
+
+    <div class="card">
+        <h2>🥗 DIETA (BALANÇA & SNACKS)</h2>
+        <div id="diet-content"></div>
+    </div>
+
+    <div class="card">
+        <h2>🍑 TREINO (VOLUME & CARGAS)</h2>
+        <div id="workout-content"></div>
+    </div>
+
+    <div class="card">
+        <h2>🍿 REGRAS DOS SNACKS</h2>
+        <div style="font-size: 0.8rem; opacity: 0.9; line-height: 1.4;">
+            • <b>Pipoca (30g):</b> Feita no ar ou mínimo de óleo.<br>
+            • <b>Polvilho (15 un):</b> Snack crocante p/ saciedade.<br>
+            • <b>Vegetais:</b> Repolho, Alface e Pepino são LIVRES.
+        </div>
+    </div>
+
+    <button class="btn-reset" onclick="hardReset()">LIMPAR TODOS OS DADOS</button>
+</div>
+
+<script>
+    let currentDay = parseInt(localStorage.getItem('mi_v2_day') || 0);
+    let timerInterval;
+
+    const rotina = [
+        {
+            foco: "Quadríceps & Glúteo",
+            diet: [
+                "Café: 2 Fat. Pão Integral + 60g Patê Frango",
+                "Almoço: 100g Arroz + 120g Frango + Salada",
+                "Lanche: 170g Iogurte + 100g Morango",
+                "Pré-Treino: 60g Tapioca + 2 Ovos",
+                "Pós: 30g Whey + 2 Quadrados Chocolate",
+                "Ceia: <span class='gram-highlight'>30g Pipoca</span>"
+            ],
+            train: [
+                {e:"Agachamento Sumô", r:"4x12"}, {e:"Leg Press (Pés baixos)", r:"4x10"}, 
+                {e:"Cadeira Extensora", r:"3x15"}, {e:"Afundo (Passada)", r:"3x10 cada"},
+                {e:"Panturrilha em pé", r:"4x15"}
+            ]
+        },
+        {
+            foco: "Posterior & Glúteo",
+            diet: [
+                "Café: 60g Cuscuz + 2 Ovos + 30g Queijo",
+                "Almoço: 100g Carne + 120g Arroz + Salada",
+                "Lanche 1: 170g Iogurte + 100g Melão",
+                "Lanche 2: <span class='gram-highlight'>15 Biscoitos Polvilho</span>",
+                "Pós: 30g Whey + 2 Quadrados Chocolate",
+                "Jantar: 120g Frango + 80g Cuscuz"
+            ],
+            train: [
+                {e:"Stiff (Halter ou Barra)", r:"4x12"}, {e:"Mesa Flexora", r:"4x15"}, 
+                {e:"Cadeira Flexora", r:"3x12"}, {e:"Cadeira Abdutora", r:"4x20"},
+                {e:"Glúteo 4 apoios", r:"3x15"}
+            ]
+        },
+        {
+            foco: "Superior & Core",
+            diet: [
+                "Café: 60g Tapioca + 2 Ovos + Queijo",
+                "Almoço: 100g Frango + 100g Arroz + Salada",
+                "Lanche: <span class='gram-highlight'>30g Pipoca</span> + Café",
+                "Pré: Café Preto + 30g Whey",
+                "Pós: 20g Chocolate + 80g Uvas",
+                "Jantar: 3 Ovos + <span class='gram-highlight'>10 Polvilhos</span>"
+            ],
+            train: [
+                {e:"Puxada Alta", r:"3x12"}, {e:"Remada Baixa", r:"3x12"}, 
+                {e:"Desenvolvimento Ombros", r:"3x10"}, {e:"Abdominal Infra", r:"4x20"},
+                {e:"Prancha", r:"3x 45seg"}
+            ]
+        },
+        {
+            foco: "Glúteo Isolado & Quadríceps",
+            diet: [
+                "Café: Pão Integral + 2 Ovos",
+                "Almoço: 120g Carne + 100g Arroz",
+                "Lanche: 30g Whey + <span class='gram-highlight'>15 Polvilhos</span>",
+                "Pré: 60g Cuscuz + Queijo",
+                "Pós: Chocolate + Morangos",
+                "Jantar: 120g Frango + <span class='gram-highlight'>30g Pipoca</span>"
+            ],
+            train: [
+                {e:"Agachamento Livre", r:"4x10"}, {e:"Búlgaro (Cadeira)", r:"3x10"}, 
+                {e:"Extensora", r:"3x12+Drop"}, {e:"Cadeira Adutora", r:"3x15"},
+                {e:"Panturrilha sentada", r:"4x15"}
+            ]
+        }
+    ];
+
+    function render() {
+        const data = rotina[currentDay];
+        document.getElementById('day-name').innerText = data.foco;
+
+        document.getElementById('diet-content').innerHTML = data.diet.map((item, i) => `
+            <div class="item ${isDone('diet', i)}" onclick="toggle('diet', ${i})">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.85rem">${item}</span>
+                    <div class="check-circle"></div>
+                </div>
+            </div>
+        `).join('');
+
+        document.getElementById('workout-content').innerHTML = data.train.map((item, i) => `
+            <div class="item ${isDone('work', i)}">
+                <div style="display:flex; justify-content:space-between; align-items:center;" onclick="toggle('work', ${i})">
+                    <div>
+                        <div style="font-weight:bold; font-size:0.85rem">${item.e}</div>
+                        <div style="font-size:0.7rem; opacity:0.6">${item.r}</div>
+                    </div>
+                    <div class="check-circle"></div>
+                </div>
+                <div style="margin-top:8px; border-top:1px solid #444; padding-top:5px; display:flex; justify-content:space-between; align-items:center">
+                    <span style="font-size:0.6rem; color:var(--accent)">CARGA (KG):</span>
+                    <input type="number" class="load-input" value="${getLoad(i)}" onchange="saveLoad(${i}, this.value)">
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function toggle(type, i) {
+        const key = `mi_v2_${currentDay}_${type}_${i}`;
+        localStorage.getItem(key) ? localStorage.removeItem(key) : localStorage.setItem(key, 'true');
+        render();
+    }
+    function isDone(type, i) { return localStorage.getItem(`mi_v2_${currentDay}_${type}_${i}`) ? 'done' : ''; }
+    function saveLoad(i, val) { localStorage.setItem(`mi_v2_load_d${currentDay}_i${i}`, val); }
+    function getLoad(i) { return localStorage.getItem(`mi_v2_load_d${currentDay}_i${i}`) || ''; }
+    function changeDay(step) { currentDay = (currentDay + step + 4) % 4; localStorage.setItem('mi_v2_day', currentDay); render(); }
+
+    function startTimer(sec) {
+        clearInterval(timerInterval);
+        let t = sec;
+        timerInterval = setInterval(() => {
+            let m = Math.floor(t / 60); let s = t % 60;
+            document.getElementById('timer-display').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            if (t-- <= 0) { clearInterval(timerInterval); }
+        }, 1000);
+    }
+    function resetTimer() { clearInterval(timerInterval); document.getElementById('timer-display').innerText = "01:00"; }
+    function hardReset() { if(confirm("DESEJA APAGAR TODO O PROGRESSO DA MILENA?")) { localStorage.clear(); location.reload(); } }
+    
+    window.onload = render;
+</script>
+</body>
+</html>
